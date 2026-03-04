@@ -1,0 +1,45 @@
+# =============================================================================
+# HelMoRo — Docker Ignore
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.github
+
+# Docker (exclude compose/scripts, keep entrypoint)
+docker/*.yaml
+docker/build.sh
+docker/run_*.sh
+docker/shell.sh
+docker/README.md
+docker/Dockerfile.*
+
+# Build artifacts (use container's own build)
+build/
+install/
+log/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# Documentation (not needed in image)
+*.md
+!README.md
+docs/

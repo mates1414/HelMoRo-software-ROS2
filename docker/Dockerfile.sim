@@ -1,0 +1,47 @@
+# =============================================================================
+# HelMoRo ROS 2 — Simulation Docker Image
+# Gazebo Ignition Fortress + GUI support (RViz, Gazebo)
+# =============================================================================
+ARG ROS_DISTRO=humble
+
+FROM helmoro:base AS sim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── Gazebo Ignition Fortress + ROS-Gazebo integration ───────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-ros-gz \
+    ros-${ROS_DISTRO}-ros-gz-sim \
+    ros-${ROS_DISTRO}-ros-gz-bridge \
+    ros-${ROS_DISTRO}-ros-gz-image \
+    ros-${ROS_DISTRO}-ros-gz-interfaces \
+    ros-${ROS_DISTRO}-ros-ign \
+    ros-${ROS_DISTRO}-ros-ign-bridge \
+    ros-${ROS_DISTRO}-ros-ign-gazebo \
+    ros-${ROS_DISTRO}-ros-ign-interfaces \
+    ros-${ROS_DISTRO}-ign-ros2-control \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── GUI / rendering dependencies ────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    mesa-utils \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    x11-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Build the workspace (simulation packages only) ──────────────────────────
+WORKDIR ${HELMORO_WS}
+
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && colcon build \
+        --symlink-install \
+        --packages-ignore helmoro_motors helmoro_real_bringup \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    && rm -rf build/*/CMakeFiles log/
+
+# Default command: launch simulation
+CMD ["ros2", "launch", "helmoro_sim_bringup", "helmoro_sim_launch.py"]

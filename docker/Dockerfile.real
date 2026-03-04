@@ -1,0 +1,54 @@
+# =============================================================================
+# HelMoRo ROS 2 — Real Robot Docker Image
+# Hardware drivers: BNO055 IMU, RPLiDAR, Orbbec camera, RoboClaw motors
+# =============================================================================
+ARG ROS_DISTRO=humble
+
+FROM helmoro:base AS real
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── Hardware-specific system dependencies ────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-serial \
+    i2c-tools \
+    libi2c-dev \
+    udev \
+    usbutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── ros2_control with fake hardware (for real robot URDF) ───────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-ros2-control \
+    ros-${ROS_DISTRO}-ros2-controllers \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── External hardware driver packages (from source) ─────────────────────────
+WORKDIR ${HELMORO_WS}/src
+
+# BNO055 IMU driver (I2C)
+RUN git clone https://github.com/flynneva/bno055.git -b ${ROS_DISTRO}
+
+# RPLiDAR ROS 2 driver
+RUN git clone https://github.com/Slamtec/rplidar_ros.git -b ${ROS_DISTRO}
+
+# Orbbec camera driver
+RUN git clone https://github.com/orbbec/OrbbecSDK_ROS2.git -b main orbbec_camera
+
+# ── Install rosdep keys for new packages ────────────────────────────────────
+WORKDIR ${HELMORO_WS}
+RUN apt-get update \
+    && rosdep update --rosdistro=${ROS_DISTRO} \
+    && rosdep install --from-paths src --ignore-src -y 2>/dev/null || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Build the workspace (real robot packages, exclude sim) ──────────────────
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && colcon build \
+        --symlink-install \
+        --packages-ignore helmoro_sim_bringup helmoro_gazebo_tools \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    && rm -rf build/*/CMakeFiles log/
+
+# Default command: launch real robot
+CMD ["ros2", "launch", "helmoro_real_bringup", "helmoro_launch.py"]

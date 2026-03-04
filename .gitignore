@@ -5,3 +5,14 @@ COLCON_IGNORE
 
 setting.json
 c_cpp_properties.json
+
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Docker — local overrides and secrets (do NOT commit)
+docker/.env
+docker/docker-compose.override.yaml
+docker-compose.override.yaml
+.env

@@ -1,0 +1,80 @@
+# =============================================================================
+# HelMoRo ROS 2 — Base Docker Image
+# Common dependencies shared between simulation and real robot
+# =============================================================================
+ARG ROS_DISTRO=humble
+
+FROM ros:${ROS_DISTRO}-ros-base-jammy AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_DISTRO=${ROS_DISTRO}
+
+SHELL ["/bin/bash", "-c"]
+
+# ── System utilities ─────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Common ROS 2 dependencies ───────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-ament-cmake \
+    ros-${ROS_DISTRO}-ament-cmake-python \
+    ros-${ROS_DISTRO}-rclcpp \
+    ros-${ROS_DISTRO}-rclcpp-action \
+    ros-${ROS_DISTRO}-rclcpp-components \
+    ros-${ROS_DISTRO}-rclpy \
+    ros-${ROS_DISTRO}-std-msgs \
+    ros-${ROS_DISTRO}-geometry-msgs \
+    ros-${ROS_DISTRO}-sensor-msgs \
+    ros-${ROS_DISTRO}-urdf \
+    ros-${ROS_DISTRO}-xacro \
+    ros-${ROS_DISTRO}-robot-state-publisher \
+    ros-${ROS_DISTRO}-joint-state-publisher \
+    ros-${ROS_DISTRO}-joint-state-publisher-gui \
+    ros-${ROS_DISTRO}-controller-manager \
+    ros-${ROS_DISTRO}-diff-drive-controller \
+    ros-${ROS_DISTRO}-joint-state-broadcaster \
+    ros-${ROS_DISTRO}-ros2controlcli \
+    ros-${ROS_DISTRO}-slam-toolbox \
+    ros-${ROS_DISTRO}-robot-localization \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-twist-mux \
+    ros-${ROS_DISTRO}-topic-tools \
+    ros-${ROS_DISTRO}-image-transport \
+    ros-${ROS_DISTRO}-image-transport-plugins \
+    ros-${ROS_DISTRO}-rviz2 \
+    ros-${ROS_DISTRO}-ros2launch \
+    ros-${ROS_DISTRO}-launch-xml \
+    ros-${ROS_DISTRO}-launch-yaml \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Workspace setup ─────────────────────────────────────────────────────────
+ENV HELMORO_WS=/ros2_ws
+RUN mkdir -p ${HELMORO_WS}/src
+WORKDIR ${HELMORO_WS}
+
+# Copy source code
+COPY . ${HELMORO_WS}/src/HelMoRo-software-ROS2/
+
+# ── Install any missing rosdep keys (best-effort) ───────────────────────────
+RUN apt-get update \
+    && rosdep update --rosdistro=${ROS_DISTRO} \
+    && rosdep install --from-paths src --ignore-src -y --skip-keys="bno055 orbbec_camera rplidar_ros" 2>/dev/null || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Entrypoint setup ────────────────────────────────────────────────────────
+COPY docker/ros_entrypoint.sh /ros_entrypoint.sh
+RUN chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]

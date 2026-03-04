@@ -1,0 +1,76 @@
+# =============================================================================
+# HelMoRo — Simulation Docker Compose
+# Run on your development / simulation PC
+# Supports NVIDIA GPU acceleration and X11 display forwarding
+# =============================================================================
+
+services:
+  helmoro-sim:
+    image: helmoro:sim
+    container_name: helmoro_sim
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.sim
+    
+    # ── Networking ─────────────────────────────────────────────────────────
+    network_mode: host
+    ipc: host
+    pid: host
+    
+    # ── Environment ────────────────────────────────────────────────────────
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.Xauthority
+      # ROS 2 DDS settings for host network communication
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+      # Gazebo rendering
+      - LIBGL_ALWAYS_SOFTWARE=${LIBGL_ALWAYS_SOFTWARE:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    
+    # ── Volumes ────────────────────────────────────────────────────────────
+    volumes:
+      # X11 display socket
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/tmp/.Xauthority:ro
+      # Source code mount for development (optional: uncomment for live editing)
+      # - ..:/ros2_ws/src/HelMoRo-software-ROS2:rw
+      # Shared memory for DDS
+      - /dev/shm:/dev/shm
+    
+    # ── GPU access (NVIDIA) ────────────────────────────────────────────────
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, utility, graphics, display]
+    
+    # ── Capabilities ───────────────────────────────────────────────────────
+    privileged: false
+    stdin_open: true
+    tty: true
+
+  # ── Joystick teleoperation (optional, run alongside sim) ─────────────────
+  helmoro-joy:
+    image: helmoro:sim
+    container_name: helmoro_joy
+    network_mode: host
+    ipc: host
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev/shm:/dev/shm
+    devices:
+      - /dev/input:/dev/input
+    command: ros2 launch helmoro_joy_control joy_control_launch.py
+    profiles:
+      - joy
+    stdin_open: true
+    tty: true

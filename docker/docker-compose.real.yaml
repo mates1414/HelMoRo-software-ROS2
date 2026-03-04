@@ -1,0 +1,75 @@
+# =============================================================================
+# HelMoRo — Real Robot Docker Compose
+# Run on the robot's onboard computer
+# Provides access to USB/serial devices and I2C bus
+# =============================================================================
+
+services:
+  helmoro-real:
+    image: helmoro:real
+    container_name: helmoro_real
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.real
+    
+    # ── Networking ─────────────────────────────────────────────────────────
+    network_mode: host
+    ipc: host
+    
+    # ── Environment ────────────────────────────────────────────────────────
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+    
+    # ── Volumes ────────────────────────────────────────────────────────────
+    volumes:
+      # Shared memory for ROS 2 DDS
+      - /dev/shm:/dev/shm
+      # Source code mount for development (optional: uncomment for live editing)
+      # - ..:/ros2_ws/src/HelMoRo-software-ROS2:rw
+    
+    # ── Hardware device access ─────────────────────────────────────────────
+    devices:
+      # RoboClaw motor controllers (USB serial)
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/ttyACM1:/dev/ttyACM1
+      # RPLiDAR (USB serial)
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      # Orbbec camera (USB)
+      # - /dev/bus/usb:/dev/bus/usb
+    
+    # ── Capabilities for hardware access ───────────────────────────────────
+    privileged: true
+    
+    # ── I2C access (for BNO055 IMU) ───────────────────────────────────────
+    # The privileged flag above grants /dev/i2c-* access.
+    # If running non-privileged, add these volume mounts instead:
+    #   volumes:
+    #     - /dev/i2c-1:/dev/i2c-1
+    #   device_cgroup_rules:
+    #     - 'c 89:* rmw'
+    
+    stdin_open: true
+    tty: true
+
+  # ── Remote RViz visualization (optional, for monitoring from laptop) ─────
+  helmoro-rviz:
+    image: helmoro:sim
+    container_name: helmoro_rviz
+    network_mode: host
+    ipc: host
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.Xauthority
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/tmp/.Xauthority:ro
+      - /dev/shm:/dev/shm
+    command: ros2 launch helmoro_common_bringup rviz_launch.py
+    profiles:
+      - rviz
+    stdin_open: true
+    tty: true
