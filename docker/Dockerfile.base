@@ -70,7 +70,7 @@ COPY . ${HELMORO_WS}/src/HelMoRo-software-ROS2/
 # ── Install any missing rosdep keys (best-effort) ───────────────────────────
 RUN apt-get update \
     && rosdep update --rosdistro=${ROS_DISTRO} \
-    && rosdep install --from-paths src --ignore-src -y --skip-keys="bno055 orbbec_camera rplidar_ros" 2>/dev/null || true \
+    && rosdep install --from-paths src --ignore-src -y --skip-keys="mpu9250driver rplidar_ros" 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Entrypoint setup ────────────────────────────────────────────────────────

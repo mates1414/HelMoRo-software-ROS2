@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Launch Gazebo Ros Bridge
+# Launch MPU9250 IMU Driver (I2C)
 
 import os
 
@@ -18,16 +18,24 @@ def generate_launch_description():
     pkg_helmoro_real_bringup = get_package_share_directory('helmoro_real_bringup')
 
     # Paths
-    bno055_config = PathJoinSubstitution([pkg_helmoro_real_bringup, 'config', 'bno055_params_i2c.yaml'])
+    mpu9250_config = PathJoinSubstitution([pkg_helmoro_real_bringup, 'config', 'mpu9250_params_i2c.yaml'])
 
-    # ROS2 bno055 IMU Node
-    bno055 = Node(
-        package = 'bno055',
-        executable = 'bno055',
-        parameters = [bno055_config]
+    # ROS2 MPU9250 IMU Node
+    # Publishes: /imu/data (sensor_msgs/Imu), /imu/mag (sensor_msgs/MagneticField)
+    mpu9250 = Node(
+        package='mpu9250driver',
+        executable='mpu9250driver',
+        name='mpu9250driver_node',
+        namespace='sensors/imu',
+        parameters=[mpu9250_config],
+        remappings=[
+            ('imu', 'data'),        # remap to /sensors/imu/data
+            ('mag', 'mag'),         # /sensors/imu/mag
+        ],
+        output='screen',
     )
 
     # Create launch description and add actions
     ld = LaunchDescription()
-    ld.add_action(bno055)
+    ld.add_action(mpu9250)
     return ld

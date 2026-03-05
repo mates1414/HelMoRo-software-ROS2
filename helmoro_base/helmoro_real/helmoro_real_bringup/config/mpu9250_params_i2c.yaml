@@ -1,0 +1,30 @@
+# MPU9250 IMU parameters (I2C)
+mpu9250driver_node:
+  ros__parameters:
+    # ── I2C connection ────────────────────────────────────────────────
+    i2c_bus: 1
+    i2c_address: 0x68    # Default MPU9250 address (0x69 if AD0 pulled high)
+
+    # ── Publishing ────────────────────────────────────────────────────
+    frequency: 100        # Hz — data query rate
+    frame_id: "imu_link"
+
+    # ── Accelerometer config ──────────────────────────────────────────
+    # Full-scale range: 0=±2g, 1=±4g, 2=±8g, 3=±16g
+    accelerometer_range: 0
+
+    # ── Gyroscope config ──────────────────────────────────────────────
+    # Full-scale range: 0=±250°/s, 1=±500°/s, 2=±1000°/s, 3=±2000°/s
+    gyroscope_range: 0
+
+    # ── Digital Low Pass Filter ───────────────────────────────────────
+    # DLPF bandwidth setting: 0-6 (lower = more filtering, higher latency)
+    # 0=260Hz, 1=184Hz, 2=94Hz, 3=44Hz, 4=21Hz, 5=10Hz, 6=5Hz
+    dlpf_bandwidth: 3
+
+    # ── Calibration offsets (set after calibration) ───────────────────
+    # Run calibration with the sensor stationary on a flat surface
+    # Accelerometer offsets [x, y, z] in m/s²
+    acceleration_bias: [0.0, 0.0, 0.0]
+    # Gyroscope offsets [x, y, z] in rad/s
+    gyroscope_bias: [0.0, 0.0, 0.0]

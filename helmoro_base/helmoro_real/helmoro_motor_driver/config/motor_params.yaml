@@ -1,0 +1,21 @@
+# Motor driver parameters
+helmoro_motor_driver_node:
+  ros__parameters:
+    # ── Serial connection to Pico 2W ──────────────────────────────────
+    serial_port: "/dev/ttyACM0"
+    baud_rate: 115200
+
+    # ── Wheel geometry (must match your robot) ────────────────────────
+    # wheel_separation: distance between left and right wheel centers [m]
+    wheel_separation: 0.195
+    # wheel_radius: radius of each wheel [m]
+    wheel_radius: 0.045
+
+    # ── Velocity limits ───────────────────────────────────────────────
+    max_linear_vel: 1.1     # m/s
+    max_angular_vel: 10.5   # rad/s
+
+    # ── Timing ────────────────────────────────────────────────────────
+    update_rate: 20.0       # Hz — main control loop frequency
+    cmd_vel_timeout: 0.5    # s  — stop if no cmd_vel received
+    watchdog_timeout: 1.0   # s  — stop if no Pico 2W response

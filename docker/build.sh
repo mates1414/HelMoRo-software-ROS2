@@ -15,13 +15,14 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 usage() {
-    echo "Usage: $0 [base|sim|real|all] [--no-cache]"
+    echo "Usage: $0 [base|sim|real|jetson|all] [--no-cache]"
     echo ""
     echo "Targets:"
     echo "  base       Build the base image only"
     echo "  sim        Build the simulation image (includes base)"
-    echo "  real       Build the real robot image (includes base)"
-    echo "  all        Build all images (default)"
+    echo "  real       Build the real robot image (includes base) — original RoboClaw hardware"
+    echo "  jetson     Build the Jetson Orin Nano image — BTS7960B/Pico/IMX219/A1M8 hardware"
+    echo "  all        Build base + sim + real (default)"
     echo ""
     echo "Options:"
     echo "  --no-cache Build without Docker cache"
@@ -39,7 +40,7 @@ if [[ "$2" == "--no-cache" ]] || [[ "$1" == "--no-cache" ]]; then
 fi
 
 build_base() {
-    echo -e "${YELLOW}[1/3] Building base image...${NC}"
+    echo -e "${YELLOW}Building base image...${NC}"
     docker build \
         ${CACHE_FLAG} \
         -f "${SCRIPT_DIR}/Dockerfile.base" \
@@ -49,7 +50,7 @@ build_base() {
 }
 
 build_sim() {
-    echo -e "${YELLOW}[2/3] Building simulation image...${NC}"
+    echo -e "${YELLOW}Building simulation image...${NC}"
     docker build \
         ${CACHE_FLAG} \
         -f "${SCRIPT_DIR}/Dockerfile.sim" \
@@ -59,13 +60,23 @@ build_sim() {
 }
 
 build_real() {
-    echo -e "${YELLOW}[3/3] Building real robot image...${NC}"
+    echo -e "${YELLOW}Building real robot image...${NC}"
     docker build \
         ${CACHE_FLAG} \
         -f "${SCRIPT_DIR}/Dockerfile.real" \
         -t helmoro:real \
         "${PROJECT_DIR}"
     echo -e "${GREEN}✓ helmoro:real built successfully${NC}"
+}
+
+build_jetson() {
+    echo -e "${YELLOW}Building Jetson Orin Nano image...${NC}"
+    docker build \
+        ${CACHE_FLAG} \
+        -f "${SCRIPT_DIR}/Dockerfile.jetson" \
+        -t helmoro:jetson \
+        "${PROJECT_DIR}"
+    echo -e "${GREEN}✓ helmoro:jetson built successfully${NC}"
 }
 
 cd "${PROJECT_DIR}"
@@ -81,6 +92,9 @@ case "$TARGET" in
     real)
         build_base
         build_real
+        ;;
+    jetson)
+        build_jetson
         ;;
     all)
         build_base

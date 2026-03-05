@@ -35,13 +35,14 @@ services:
       - /dev/ttyACM1:/dev/ttyACM1
       # RPLiDAR (USB serial)
       - /dev/ttyUSB0:/dev/ttyUSB0
-      # Orbbec camera (USB)
-      # - /dev/bus/usb:/dev/bus/usb
+      # Stereo camera (CSI/USB)
+      # - /dev/video0:/dev/video0
+      # - /dev/video1:/dev/video1
     
     # ── Capabilities for hardware access ───────────────────────────────────
     privileged: true
     
-    # ── I2C access (for BNO055 IMU) ───────────────────────────────────────
+    # ── I2C access (for MPU9250 IMU) ───────────────────────────────────────
     # The privileged flag above grants /dev/i2c-* access.
     # If running non-privileged, add these volume mounts instead:
     #   volumes:

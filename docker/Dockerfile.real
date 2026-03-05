@@ -1,6 +1,7 @@
 # =============================================================================
-# HelMoRo ROS 2 — Real Robot Docker Image
-# Hardware drivers: BNO055 IMU, RPLiDAR, Orbbec camera, RoboClaw motors
+# HelMoRo ROS 2 — Real Robot Docker Image (x86_64)
+# Hardware: BNO055 IMU, RPLiDAR A1M8, IMX219-83 stereo, BTS7960B + Pico 2W
+# For Jetson Orin Nano, use Dockerfile.jetson instead
 # =============================================================================
 ARG ROS_DISTRO=humble
 
@@ -15,38 +16,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libi2c-dev \
     udev \
     usbutils \
+    v4l-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# ── ros2_control with fake hardware (for real robot URDF) ───────────────────
+# ── ros2_control + stereo camera processing ─────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-ros2-control \
     ros-${ROS_DISTRO}-ros2-controllers \
+    ros-${ROS_DISTRO}-v4l2-camera \
+    ros-${ROS_DISTRO}-stereo-image-proc \
+    ros-${ROS_DISTRO}-image-pipeline \
+    ros-${ROS_DISTRO}-camera-calibration \
     && rm -rf /var/lib/apt/lists/*
 
 # ── External hardware driver packages (from source) ─────────────────────────
 WORKDIR ${HELMORO_WS}/src
 
-# BNO055 IMU driver (I2C)
-RUN git clone https://github.com/flynneva/bno055.git -b ${ROS_DISTRO}
+# MPU9250 IMU driver (I2C)
+RUN git clone https://github.com/hiwad-aziz/ros2_mpu9250_driver.git mpu9250driver
 
-# RPLiDAR ROS 2 driver
+# RPLiDAR ROS 2 driver (supports A1, A2, A3, S1, S2)
 RUN git clone https://github.com/Slamtec/rplidar_ros.git -b ${ROS_DISTRO}
-
-# Orbbec camera driver
-RUN git clone https://github.com/orbbec/OrbbecSDK_ROS2.git -b main orbbec_camera
 
 # ── Install rosdep keys for new packages ────────────────────────────────────
 WORKDIR ${HELMORO_WS}
 RUN apt-get update \
     && rosdep update --rosdistro=${ROS_DISTRO} \
-    && rosdep install --from-paths src --ignore-src -y 2>/dev/null || true \
+    && rosdep install --from-paths src --ignore-src -y \
+       --skip-keys="mpu9250driver" 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Build the workspace (real robot packages, exclude sim) ──────────────────
+# ── Build the workspace (real robot packages, exclude sim + old motors) ─────
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
     && colcon build \
         --symlink-install \
-        --packages-ignore helmoro_sim_bringup helmoro_gazebo_tools \
+        --packages-ignore helmoro_sim_bringup helmoro_gazebo_tools helmoro_motors \
         --cmake-args -DCMAKE_BUILD_TYPE=Release \
     && rm -rf build/*/CMakeFiles log/
 

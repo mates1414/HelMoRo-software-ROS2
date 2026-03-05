@@ -16,16 +16,18 @@ from launch_ros.actions import Node
 def generate_launch_description():
     # Directories
     pkg_helmoro_real_bringup = get_package_share_directory('helmoro_real_bringup')
-    pkg_helmoro_motors = get_package_share_directory('helmoro_motors')
+    # pkg_helmoro_motors = get_package_share_directory('helmoro_motors')  # Original RoboClaw
     pkg_helmoro_description = get_package_share_directory('helmoro_description')
     pkg_helmoro_common = get_package_share_directory('helmoro_common_bringup')
     pkg_helmoro_navigation = get_package_share_directory('helmoro_navigation')
 
+    pkg_helmoro_motor_driver = get_package_share_directory('helmoro_motor_driver')
+
     # Paths
     imu_launch = PathJoinSubstitution([pkg_helmoro_real_bringup, 'launch', 'imu_launch.py'])
     lidar_launch = PathJoinSubstitution([pkg_helmoro_real_bringup, 'launch', 'lidar_launch.py'])
-    camera_launch = PathJoinSubstitution([pkg_helmoro_real_bringup, 'launch', 'camera_launch.py'])
-    motor_controller_launch = PathJoinSubstitution([pkg_helmoro_motors, 'launch', 'helmoro_motors.launch.py'])
+    camera_launch = PathJoinSubstitution([pkg_helmoro_real_bringup, 'launch', 'stereo_camera_launch.py'])
+    motor_controller_launch = PathJoinSubstitution([pkg_helmoro_motor_driver, 'launch', 'motor_driver.launch.py'])
     helmoro_description_launch = PathJoinSubstitution([pkg_helmoro_description, 'launch', 'helmoro_description_launch.py'])
     helmoro_common_launch = PathJoinSubstitution([pkg_helmoro_common, 'launch', 'common_launch.py'])
     navigation_launch = PathJoinSubstitution(

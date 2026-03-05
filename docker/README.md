@@ -14,9 +14,9 @@ Docker images for the HelMoRo ROS 2 stack, eliminating dependency issues across 
                 │                 │
     ┌───────────▼──────┐  ┌──────▼────────────┐
     │   helmoro:sim    │  │   helmoro:real     │
-    │ + Gazebo Fortress│  │ + BNO055 driver    │
+    │ + Gazebo Fortress│  │ + MPU9250 driver   │
     │ + ign_ros2_ctrl  │  │ + RPLiDAR driver   │
-    │ + GL/X11 libs    │  │ + Orbbec camera    │
+    │ + GL/X11 libs    │  │ + Stereo camera    │
     │ - real packages  │  │ + pyserial/i2c     │
     └──────────────────┘  │ - sim packages     │
                           └───────────────────┘

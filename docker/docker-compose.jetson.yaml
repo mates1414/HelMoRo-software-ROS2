@@ -1,0 +1,49 @@
+# =============================================================================
+# HelMoRo — Jetson Orin Nano Docker Compose
+# Run on the robot's Jetson Orin Nano
+# Hardware: BTS7960B + Pico 2W, IMX219-83 stereo, RPLiDAR A1M8, BNO055
+# =============================================================================
+
+services:
+  helmoro-jetson:
+    image: helmoro:jetson
+    container_name: helmoro_jetson
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jetson
+
+    # ── Networking ─────────────────────────────────────────────────────
+    network_mode: host
+    ipc: host
+
+    # ── Environment ────────────────────────────────────────────────────
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+
+    # ── Volumes ────────────────────────────────────────────────────────
+    volumes:
+      - /dev/shm:/dev/shm
+      # Source code mount for development (optional)
+      # - ..:/ros2_ws/src/HelMoRo-software-ROS2:rw
+
+    # ── Hardware device access ─────────────────────────────────────────
+    devices:
+      # Pico 2W (USB serial for motor control)
+      - /dev/ttyACM0:/dev/ttyACM0
+      # RPLiDAR A1M8 (USB serial)
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      # IMX219-83 stereo cameras (CSI → V4L2)
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      # I2C bus for BNO055 IMU
+      - /dev/i2c-1:/dev/i2c-1
+
+    # ── GPU access (Jetson NVIDIA runtime) ─────────────────────────────
+    runtime: nvidia
+
+    # ── Capabilities for hardware access ───────────────────────────────
+    privileged: true
+
+    stdin_open: true
+    tty: true
