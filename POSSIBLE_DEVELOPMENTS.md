@@ -39,7 +39,7 @@
 
 ## Software Quality
 
-23. **Docker containerization** — Create Dockerfiles for reproducible builds (sim + real)
+23. [x] **Docker containerization** — Create Dockerfiles for reproducible builds (sim + real)
 24. **CI/CD pipeline** — GitHub Actions for automated build, test, and linting
 25. **ROS 2 launch testing** — Add `launch_testing` integration tests for the full stack
 26. **Parameter tuning framework** — Dynamic reconfigure for PID, Nav2, and SLAM parameters at runtime

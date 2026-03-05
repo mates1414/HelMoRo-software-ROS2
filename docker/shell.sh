@@ -28,7 +28,10 @@ if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     docker exec -it "${CONTAINER}" bash
 else
     echo "Starting new ${TARGET} shell..."
-    
+
+    # Remove any stale stopped container with the same name
+    docker rm -f "${CONTAINER}_shell" 2>/dev/null || true
+
     EXTRA_FLAGS=""
     if [ "$TARGET" = "sim" ]; then
         xhost +local:docker 2>/dev/null || true
