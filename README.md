@@ -208,6 +208,9 @@ ros2 launch helmoro_sim_bringup helmoro_sim_launch.py use_joy:=true
 
 # Choose a different world
 ros2 launch helmoro_sim_bringup helmoro_sim_launch.py world:=empty
+
+# Use 4-wheel drive mode (independent per-wheel control, wheels_per_side=2)
+ros2 launch helmoro_sim_bringup helmoro_sim_launch.py drive_mode:=4wd
 ```
 
 ### Real Robot
@@ -215,6 +218,9 @@ ros2 launch helmoro_sim_bringup helmoro_sim_launch.py world:=empty
 ```bash
 # Launch full real robot stack (sensors, motors, SLAM, EKF, Nav2)
 ros2 launch helmoro_real_bringup helmoro_launch.py
+
+# Launch with 4WD mode (requires 4 independent motors + encoders)
+ros2 launch helmoro_real_bringup helmoro_launch.py drive_mode:=4wd
 ```
 
 ### Control (separate terminal)

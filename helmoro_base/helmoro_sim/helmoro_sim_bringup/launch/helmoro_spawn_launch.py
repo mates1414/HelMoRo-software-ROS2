@@ -19,6 +19,9 @@ ARGUMENTS = [
     DeclareLaunchArgument('use_rviz', default_value='true',
                           choices=['true', 'false'],
                           description='Start rviz.'),
+    DeclareLaunchArgument('drive_mode', default_value='2wd',
+                          choices=['2wd', '4wd'],
+                          description='Drive mode: 2wd (wheels_per_side=1) or 4wd (wheels_per_side=2).'),
 ]
 
 for pose_element in ['x', 'y', 'z', 'yaw']:
@@ -58,7 +61,8 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([helmoro_common_launch]),
         launch_arguments=[
             ('use_sim_time', 'true'),
-            ('use_rviz', LaunchConfiguration('use_rviz'))
+            ('use_rviz', LaunchConfiguration('use_rviz')),
+            ('drive_mode', LaunchConfiguration('drive_mode')),
             ]   
     )
 

@@ -26,7 +26,10 @@ class RosHandler(Node):
         # Velocity constraints
         self.max_lin_vel = 1.1 #m/s
         self.max_ang_vel = 10.5 #rad/s
-        # Runtim
+        # Drive mode
+        self.declare_parameter('drive_mode', '2wd')  # '2wd' or '4wd'
+        self.drive_mode = self.get_parameter('drive_mode').value
+        # Runtime
         self.frequency = 10.0
 
         # Variables
@@ -96,7 +99,12 @@ class RosHandler(Node):
         joint_state_msg.header.frame_id = ''  # Reference frame (if applicable)
 
         # Fill in the joint state data
-        joint_state_msg.name = ["Left_1", "Right_1", "Left_2", "Right_2"]
+        joint_state_msg.name = [
+            'base_link_to_LEFT_FRONT_WHEEL',
+            'base_link_to_RIGHT_FRONT_WHEEL',
+            'base_link_to_LEFT_BACK_WHEEL',
+            'base_link_to_RIGHT_BACK_WHEEL',
+        ]
         joint_state_msg.position = self.wheel_pos 
         joint_state_msg.velocity = self.wheel_vel
         joint_state_msg.effort = []
@@ -108,8 +116,18 @@ class RosHandler(Node):
         wheel_vel_cmd = [0.0, 0.0, 0.0, 0.0]
         wheel_vel_cmd[0] = self.vx_cmd + self.yaw_cmd * self.dy_wheels / 2
         wheel_vel_cmd[1] = self.vx_cmd - self.yaw_cmd * self.dy_wheels / 2
-        wheel_vel_cmd[2] = wheel_vel_cmd[0]
-        wheel_vel_cmd[3] = wheel_vel_cmd[1]
+
+        if self.drive_mode == '4wd':
+            # 4WD: compute independent rear wheel velocities
+            # For a simple diff-drive, front and back get the same command.
+            # Override here if your 4WD platform needs different rear velocities
+            # (e.g., torque vectoring, turning compensation).
+            wheel_vel_cmd[2] = self.vx_cmd + self.yaw_cmd * self.dy_wheels / 2
+            wheel_vel_cmd[3] = self.vx_cmd - self.yaw_cmd * self.dy_wheels / 2
+        else:
+            # 2WD: rear mirrors front
+            wheel_vel_cmd[2] = wheel_vel_cmd[0]
+            wheel_vel_cmd[3] = wheel_vel_cmd[1]
 
         if wheel_vel_cmd[1] > self.max_motor_speed:
             self.get_logger().info('Requested left_motors vel of: ' + str(wheel_vel_cmd[1]) + ' meters per seconds')

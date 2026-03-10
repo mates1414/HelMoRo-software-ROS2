@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, RegisterEventHandler, GroupAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, RegisterEventHandler, GroupAction, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, SetRemap, PushRosNamespace
@@ -7,12 +7,16 @@ from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
+import os
 
 ARGUMENTS = [
     DeclareLaunchArgument('use_rviz', default_value='false',
                           choices=['true', 'false'], description='Start rviz.'),
     DeclareLaunchArgument('use_sim_time', default_value='false',
                           choices=['true', 'false'], description='Use sim time.'),
+    DeclareLaunchArgument('drive_mode', default_value='2wd',
+                          choices=['2wd', '4wd'],
+                          description='Drive mode: 2wd (wheels_per_side=1) or 4wd (wheels_per_side=2).'),
 ]
 
 def generate_launch_description():
@@ -31,11 +35,20 @@ def generate_launch_description():
         [pkg_helmoro_state_estimation, 'launch', 'helmoro_state_estimation_launch.py'])
     robot_description_launch_file = PathJoinSubstitution(
         [pkg_helmoro_description, 'launch', 'helmoro_description_launch.py'])
+    # Select controller config based on drive_mode
+    drive_mode = LaunchConfiguration('drive_mode')
     controller_params = PathJoinSubstitution(
         [
             FindPackageShare('helmoro_control'),
             "config",
             "helmoro_controller.yaml",
+        ]
+    )
+    controller_params_4wd = PathJoinSubstitution(
+        [
+            FindPackageShare('helmoro_control'),
+            "config",
+            "helmoro_controller_4wd.yaml",
         ]
     )
 
@@ -53,17 +66,6 @@ def generate_launch_description():
         launch_arguments=[
             ('use_sim_time', LaunchConfiguration('use_sim_time'))
         ]   
-    )
-
-    control_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[controller_params],
-        output="both",
-        remappings=[
-            ("~/robot_description", "/robot_description"),
-        ],
-        condition=UnlessCondition(LaunchConfiguration('use_sim_time'))
     )
 
     load_joint_state_broadcaster = ExecuteProcess(
@@ -126,12 +128,35 @@ def generate_launch_description():
         output='screen',
     )
     
+    # ── Helper: resolve controller params at launch time based on drive_mode ──
+    def _select_controller_params(context):
+        mode = context.launch_configurations.get('drive_mode', '2wd')
+        pkg_dir = get_package_share_directory('helmoro_control')
+        if mode == '4wd':
+            yaml_file = os.path.join(pkg_dir, 'config', 'helmoro_controller_4wd.yaml')
+        else:
+            yaml_file = os.path.join(pkg_dir, 'config', 'helmoro_controller.yaml')
+
+        return [
+            Node(
+                package="controller_manager",
+                executable="ros2_control_node",
+                parameters=[yaml_file],
+                output="both",
+                remappings=[
+                    ("~/robot_description", "/robot_description"),
+                ],
+                condition=UnlessCondition(LaunchConfiguration('use_sim_time'))
+            )
+        ]
+
     # Create launch description and add actions
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(robot_description)
     ld.add_action(rviz)
     ld.add_action(slam)
-    ld.add_action(control_node)
+    # Use OpaqueFunction to resolve drive_mode at launch time for real-robot control node
+    ld.add_action(OpaqueFunction(function=_select_controller_params))
     ld.add_action(load_joint_state_broadcaster)
     ld.add_action(delay_diff_drive_controller_after_joint_state_broadcaster)
     ld.add_action(state_estimation)

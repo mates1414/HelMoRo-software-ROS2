@@ -39,6 +39,7 @@ class MotorDriverNode(Node):
         self.declare_parameter('update_rate', 20.0)         # Hz
         self.declare_parameter('cmd_vel_timeout', 0.5)      # seconds
         self.declare_parameter('watchdog_timeout', 1.0)     # seconds — stop if no Pico data
+        self.declare_parameter('drive_mode', '2wd')         # '2wd' or '4wd'
 
         # ── Read parameters ──────────────────────────────────────────────
         self.serial_port = self.get_parameter('serial_port').value
@@ -50,8 +51,14 @@ class MotorDriverNode(Node):
         self.update_rate = self.get_parameter('update_rate').value
         self.cmd_vel_timeout = self.get_parameter('cmd_vel_timeout').value
         self.watchdog_timeout = self.get_parameter('watchdog_timeout').value
+        self.drive_mode = self.get_parameter('drive_mode').value
 
         self.wheel_circumference = 2.0 * math.pi * self.wheel_rad
+
+        if self.drive_mode == '4wd':
+            self.get_logger().info('Drive mode: 4WD — expecting 4 independent motors + encoders')
+        else:
+            self.get_logger().info('Drive mode: 2WD — mirroring front/back per side')
 
         # ── State variables ──────────────────────────────────────────────
         self.vx_cmd = 0.0
@@ -137,17 +144,28 @@ class MotorDriverNode(Node):
         left_vel = self.vx_cmd - self.yaw_cmd * self.wheel_sep / 2.0
         right_vel = self.vx_cmd + self.yaw_cmd * self.wheel_sep / 2.0
 
-        # Send to Pico and receive encoder feedback
-        ok = self.pico.send_velocity_command(left_vel, right_vel)
+        if self.drive_mode == '4wd':
+            # 4WD: send 4 independent velocity commands
+            # TODO: Update pico.send_velocity_command_4wd() once firmware supports 4 motors
+            ok = self.pico.send_velocity_command(left_vel, right_vel)
+        else:
+            # 2WD: send 2 velocity commands (front=back per side)
+            ok = self.pico.send_velocity_command(left_vel, right_vel)
 
         if ok:
             enc_pos = self.pico.get_encoder_positions()
             enc_vel = self.pico.get_wheel_velocities()
 
-            # Map 2-side data to 4-wheel arrays:
-            # [left_front, right_front, left_back, right_back]
-            self.wheel_pos = [enc_pos[0], enc_pos[1], enc_pos[0], enc_pos[1]]
-            self.wheel_vel = [enc_vel[0], enc_vel[1], enc_vel[0], enc_vel[1]]
+            if self.drive_mode == '4wd' and len(enc_pos) >= 4:
+                # 4WD: use independent encoder data for all 4 wheels
+                # [left_front, right_front, left_back, right_back]
+                self.wheel_pos = [enc_pos[0], enc_pos[1], enc_pos[2], enc_pos[3]]
+                self.wheel_vel = [enc_vel[0], enc_vel[1], enc_vel[2], enc_vel[3]]
+            else:
+                # 2WD: mirror 2-side data to 4-wheel arrays
+                # [left_front, right_front, left_back, right_back]
+                self.wheel_pos = [enc_pos[0], enc_pos[1], enc_pos[0], enc_pos[1]]
+                self.wheel_vel = [enc_vel[0], enc_vel[1], enc_vel[0], enc_vel[1]]
         else:
             # Watchdog: if too long without data, emergency stop
             if self.pico.get_last_rx_age() > self.watchdog_timeout:

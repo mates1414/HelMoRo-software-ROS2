@@ -7,11 +7,17 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 
 from launch_ros.actions import Node
+
+ARGUMENTS = [
+    DeclareLaunchArgument('drive_mode', default_value='2wd',
+                          choices=['2wd', '4wd'],
+                          description='Drive mode: 2wd (wheels_per_side=1) or 4wd (wheels_per_side=2).'),
+]
 
 def generate_launch_description():
     # Directories
@@ -55,6 +61,9 @@ def generate_launch_description():
 
     helmoro_common = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([helmoro_common_launch]),
+        launch_arguments=[
+            ('drive_mode', LaunchConfiguration('drive_mode')),
+        ]
     )
 
     navigation = IncludeLaunchDescription(
@@ -69,7 +78,7 @@ def generate_launch_description():
     )
 
     # Create launch description and add actions
-    ld = LaunchDescription()
+    ld = LaunchDescription(ARGUMENTS)
     ld.add_action(imu)
     ld.add_action(lidar)
     ld.add_action(camera)

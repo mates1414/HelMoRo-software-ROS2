@@ -18,6 +18,9 @@ ARGUMENTS = [
     DeclareLaunchArgument('use_joy', default_value='false',
                           choices=['true', 'false'],
                           description='Launch joystick control node.'),
+    DeclareLaunchArgument('drive_mode', default_value='2wd',
+                          choices=['2wd', '4wd'],
+                          description='Drive mode: 2wd (wheels_per_side=1) or 4wd (wheels_per_side=2).'),
 ]
 
 for pose_element in ['x', 'y', 'yaw']:
@@ -55,7 +58,8 @@ def generate_launch_description():
             ('x', LaunchConfiguration('x')),
             ('y', LaunchConfiguration('y')),
             ('z', LaunchConfiguration('z')),
-            ('yaw', LaunchConfiguration('yaw'))
+            ('yaw', LaunchConfiguration('yaw')),
+            ('drive_mode', LaunchConfiguration('drive_mode')),
             ]
         )
     
